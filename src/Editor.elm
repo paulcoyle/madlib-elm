@@ -1,4 +1,4 @@
-port module Editor exposing (..)
+module Editor exposing (..)
 
 import Html exposing (Html, Attribute)
 import Html.Attributes as Attr
@@ -12,13 +12,6 @@ type Msg
     | Blur
     | Make
     | Clear
-    | TextareaHeight ( String, Int )
-
-
-port checkTextareaHeight : String -> Cmd msg
-
-
-port textareaHeight : (( String, Int ) -> msg) -> Sub msg
 
 
 type Event
@@ -27,26 +20,22 @@ type Event
 
 
 type alias Model =
-    { id : String
-    , height : Int
-    , content : String
+    { content : String
     , focused : Bool
     , enabled : Bool
     }
 
 
-init : String -> ( Model, Cmd Msg )
-init id =
+init : ( Model, Cmd Msg )
+init =
     let
         model =
-            { id = id
-            , height = 0
-            , content = ""
+            { content = ""
             , focused = False
             , enabled = True
             }
     in
-        ( model, checkTextareaHeight id )
+        ( model, Cmd.none )
 
 
 setContent : Model -> String -> Model
@@ -68,7 +57,7 @@ update : Msg -> Model -> ( Model, Cmd Msg, Event )
 update message model =
     case message of
         Change newContent ->
-            ( { model | content = newContent }, checkTextareaHeight model.id, EventNone )
+            ( { model | content = newContent }, Cmd.none, EventNone )
 
         Focus ->
             ( { model | focused = True }, Cmd.none, EventNone )
@@ -80,18 +69,7 @@ update message model =
             ( model, Cmd.none, EventMake )
 
         Clear ->
-            ( { model | content = "" }, checkTextareaHeight model.id, EventNone )
-
-        TextareaHeight ( id, height ) ->
-            if id == model.id then
-                ( { model | height = height }, Cmd.none, EventNone )
-            else
-                ( model, Cmd.none, EventNone )
-
-
-subscriptions : Model -> Sub Msg
-subscriptions model =
-    textareaHeight TextareaHeight
+            ( { model | content = "" }, Cmd.none, EventNone )
 
 
 view : Model -> Html Msg
@@ -103,19 +81,16 @@ view model =
             ]
         ]
         [ Html.textarea
-            [ Attr.id model.id
-            , Attr.class "editor-input"
+            [ Attr.class "editor-input"
             , Attr.placeholder "Type in here to make a madlib..."
             , Attr.value model.content
             , Attr.disabled (not model.enabled)
-            , Attr.style [ ( "height", (toString model.height) ++ "px" ) ]
             , onInput Change
             , onFocus Focus
             , onBlur Blur
             ]
             []
         , controlsView model
-        , Html.div [] [ Html.text (toString model.height) ]
         ]
 
 

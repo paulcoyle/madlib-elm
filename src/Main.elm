@@ -2,6 +2,7 @@ module Main exposing (..)
 
 import Html exposing (Html)
 import Html.App as App
+import Html.Attributes as Attr
 import Editor
 
 
@@ -18,7 +19,7 @@ init : ( Model, Cmd Msg )
 init =
     let
         ( editor, editorCmd ) =
-            Editor.init "editor"
+            Editor.init
 
         commands =
             Cmd.batch [ Cmd.map Editor editorCmd, Cmd.none ]
@@ -57,16 +58,12 @@ updateByEditorEvent event model =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    let
-        editorSubs =
-            Editor.subscriptions model.editor
-    in
-        Sub.batch [ Sub.map Editor editorSubs, Sub.none ]
+    Sub.none
 
 
 view : Model -> Html Msg
 view model =
-    Html.div []
+    Html.div [ Attr.id "app" ]
         [ App.map Editor (Editor.view model.editor)
         ]
 
