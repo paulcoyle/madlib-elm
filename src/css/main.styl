@@ -1,0 +1,25 @@
+global-reset()
+
+.editor
+  margin: 0 auto
+  max-width: 500px
+  padding: 20px
+  border: 1px solid #ccc
+
+  .editor-content
+    min-height: 32px + 16px
+    font-size: 32px
+
+    span
+      position: relative
+      display: inline-block
+      margin: 8px 0
+
+      &.has-caret
+        &:before
+          position: absolute
+          top: 0
+          right: 0
+          bottom: 0
+          content: ''
+          border-right: 1px solid #000
