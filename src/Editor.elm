@@ -1,231 +1,139 @@
-module Editor exposing (..)
+port module Editor exposing (..)
 
-import Array exposing (Array)
 import Html exposing (Html, Attribute)
 import Html.Attributes as Attr
-import Html.Events exposing (onWithOptions, onFocus, onBlur, keyCode)
-import Json.Decode as Json exposing ((:=))
-import Regex
+import Html.Events exposing (onInput, onFocus, onBlur, onClick)
 import String
 
 
 type Msg
-    = Focus
+    = Change String
+    | Focus
     | Blur
-    | Key String
+    | Make
+    | Clear
+    | TextareaHeight ( String, Int )
+
+
+port checkTextareaHeight : String -> Cmd msg
+
+
+port textareaHeight : (( String, Int ) -> msg) -> Sub msg
 
 
 type Event
     = EventNone
+    | EventMake
 
 
 type alias Model =
-    { content : String
-    , caret : Int
+    { id : String
+    , height : Int
+    , content : String
     , focused : Bool
+    , enabled : Bool
     }
 
 
-init : ( Model, Cmd Msg )
-init =
-    initWithContent ""
-
-
-initWithContent : String -> ( Model, Cmd Msg )
-initWithContent content =
+init : String -> ( Model, Cmd Msg )
+init id =
     let
         model =
-            { content = content
-            , caret = String.length content
+            { id = id
+            , height = 0
+            , content = ""
             , focused = False
+            , enabled = True
             }
     in
-        ( model, Cmd.none )
+        ( model, checkTextareaHeight id )
+
+
+setContent : Model -> String -> Model
+setContent model newContent =
+    { model | content = newContent }
+
+
+disable : Model -> Model
+disable model =
+    { model | enabled = False }
+
+
+enable : Model -> Model
+enable model =
+    { model | enabled = True }
 
 
 update : Msg -> Model -> ( Model, Cmd Msg, Event )
 update message model =
     case message of
+        Change newContent ->
+            ( { model | content = newContent }, checkTextareaHeight model.id, EventNone )
+
         Focus ->
             ( { model | focused = True }, Cmd.none, EventNone )
 
         Blur ->
             ( { model | focused = False }, Cmd.none, EventNone )
 
-        Key key ->
-            if (isContentKey key) then
-                ( (appendAtCaret model key), Cmd.none, EventNone )
+        Make ->
+            ( model, Cmd.none, EventMake )
+
+        Clear ->
+            ( { model | content = "" }, checkTextareaHeight model.id, EventNone )
+
+        TextareaHeight ( id, height ) ->
+            if id == model.id then
+                ( { model | height = height }, Cmd.none, EventNone )
             else
-                case key of
-                    "ArrowLeft" ->
-                        ( (updateCaret model -1), Cmd.none, EventNone )
-
-                    "ArrowRight" ->
-                        ( (updateCaret model 1), Cmd.none, EventNone )
-
-                    "Backspace" ->
-                        ( (dropBackAtCaret model), Cmd.none, EventNone )
-
-                    "Delete" ->
-                        ( (dropForwardAtCaret model), Cmd.none, EventNone )
-
-                    _ ->
-                        ( model, Cmd.none, EventNone )
+                ( model, Cmd.none, EventNone )
 
 
-appendAtCaret : Model -> String -> Model
-appendAtCaret model append =
-    let
-        left =
-            String.slice 0 model.caret model.content
-
-        right =
-            String.slice model.caret (String.length model.content) model.content
-
-        newContent =
-            left ++ append ++ right
-
-        newCaret =
-            model.caret + (String.length append)
-    in
-        { model
-            | content = newContent
-            , caret = newCaret
-        }
-
-
-updateCaret : Model -> Int -> Model
-updateCaret model delta =
-    let
-        newCaret =
-            clamp 0 (String.length model.content) (model.caret + delta)
-    in
-        { model | caret = newCaret }
-
-
-dropBackAtCaret : Model -> Model
-dropBackAtCaret model =
-    let
-        newContent =
-            dropCharAt model.content model.caret
-
-        newModel =
-            updateCaret model -1
-    in
-        { newModel | content = newContent }
-
-
-dropForwardAtCaret : Model -> Model
-dropForwardAtCaret model =
-    let
-        newContent =
-            dropCharAt model.content (model.caret + 1)
-    in
-        { model | content = newContent }
-
-
-dropCharAt : String -> Int -> String
-dropCharAt content index =
-    let
-        length =
-            String.length content
-
-        leftBound =
-            clamp 0 length (index - 1)
-
-        rightBound =
-            clamp 0 length index
-
-        left =
-            String.slice 0 leftBound content
-
-        right =
-            String.slice rightBound length content
-    in
-        left ++ right
-
-
-isContentKey : String -> Bool
-isContentKey key =
-    let
-        expr =
-            Regex.caseInsensitive (Regex.regex "^[a-z,;\\.\\:\\s\\-\\!\\?]{1}$")
-    in
-        Regex.contains expr key
+subscriptions : Model -> Sub Msg
+subscriptions model =
+    textareaHeight TextareaHeight
 
 
 view : Model -> Html Msg
 view model =
     Html.div
-        [ Attr.tabindex 0
-          -- to allow focusing
-        , Attr.classList
+        [ Attr.classList
             [ ( "editor", True )
             , ( "focused", model.focused )
             ]
-        , onFocus Focus
-        , onBlur Blur
-        , onKeyDown Key
         ]
-        [ contentView model ]
-
-
-contentView : Model -> Html Msg
-contentView model =
-    let
-        hasCaret : Int -> Bool
-        hasCaret charIndex =
-            charIndex == (model.caret - 1)
-
-        indexedChars : List ( Int, Char )
-        indexedChars =
-            Array.toIndexedList
-                (String.foldl (\a b -> Array.push a b)
-                    Array.empty
-                    model.content
-                )
-
-        charToString : Char -> String
-        charToString char =
-            case char of
-                ' ' ->
-                    " "
-
-                _ ->
-                    String.fromChar char
-
-        charToHtml : ( Int, Char ) -> Html Msg
-        charToHtml ( index, char ) =
-            Html.span
-                [ Attr.classList
-                    [ ( "has-caret", hasCaret index )
-                    ]
-                ]
-                [ Html.text (charToString char) ]
-
-        spanFold : ( Int, Char ) -> List (Html Msg) -> List (Html Msg)
-        spanFold char spans =
-            List.append spans [ (charToHtml char) ]
-
-        charSpans : List (Html Msg)
-        charSpans =
-            List.foldl spanFold [] indexedChars
-    in
-        Html.div
-            [ Attr.classList
-                [ ( "editor-content", True )
-                ]
+        [ Html.textarea
+            [ Attr.id model.id
+            , Attr.class "editor-input"
+            , Attr.placeholder "Type in here to make a madlib..."
+            , Attr.value model.content
+            , Attr.disabled (not model.enabled)
+            , Attr.style [ ( "height", (toString model.height) ++ "px" ) ]
+            , onInput Change
+            , onFocus Focus
+            , onBlur Blur
             ]
-            charSpans
+            []
+        , controlsView model
+        , Html.div [] [ Html.text (toString model.height) ]
+        ]
 
 
-onKeyDown : (String -> msg) -> Attribute msg
-onKeyDown tagger =
+controlsView : Model -> Html Msg
+controlsView model =
     let
-        options =
-            { stopPropagation = False, preventDefault = True }
-
-        charDecoder =
-            "key" := Json.string
+        active =
+            model.enabled && ((String.length model.content) > 0)
     in
-        onWithOptions "keydown" options (Json.map tagger charDecoder)
+        Html.div [ Attr.class "editor-controls" ]
+            [ Html.button
+                [ Attr.disabled (not active)
+                , onClick Make
+                ]
+                [ Html.text "Make" ]
+            , Html.button
+                [ Attr.disabled (not active)
+                , onClick Clear
+                ]
+                [ Html.text "Clear" ]
+            ]

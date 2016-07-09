@@ -18,7 +18,7 @@ init : ( Model, Cmd Msg )
 init =
     let
         ( editor, editorCmd ) =
-            Editor.init
+            Editor.init "editor"
 
         commands =
             Cmd.batch [ Cmd.map Editor editorCmd, Cmd.none ]
@@ -35,9 +35,9 @@ update message model =
                     Editor.update editorMsg model.editor
 
                 ( newModel, commandsFromEvent ) =
-                    updateByEditorEvent editorEvent model
+                    updateByEditorEvent editorEvent { model | editor = editor }
             in
-                ( { newModel | editor = editor }
+                ( newModel
                 , Cmd.batch
                     [ Cmd.map Editor editorCmd
                     , commandsFromEvent
@@ -48,13 +48,20 @@ update message model =
 updateByEditorEvent : Editor.Event -> Model -> ( Model, Cmd Msg )
 updateByEditorEvent event model =
     case event of
+        Editor.EventMake ->
+            ( { model | editor = (Editor.disable model.editor) }, Cmd.none )
+
         Editor.EventNone ->
             ( model, Cmd.none )
 
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    Sub.none
+    let
+        editorSubs =
+            Editor.subscriptions model.editor
+    in
+        Sub.batch [ Sub.map Editor editorSubs, Sub.none ]
 
 
 view : Model -> Html Msg
