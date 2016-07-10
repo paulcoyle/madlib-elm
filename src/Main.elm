@@ -3,15 +3,29 @@ module Main exposing (..)
 import Html exposing (Html)
 import Html.App as App
 import Html.Attributes as Attr
+import Html.Events exposing (onClick)
 import Editor
+import String
 
 
 type Msg
-    = Editor Editor.Msg
+    = StageForward
+    | StageBack
+    | Editor Editor.Msg
+
+
+type Stage
+    = StageTextEntry
+    | StageWaitingForParse
+    | StageConfigMadlib
 
 
 type alias Model =
-    { editor : Editor.Model
+    { stage : Stage
+    , editor : Editor.Model
+    , nextParseId : Int
+    , pendingParseId : Int
+    , hasParsed : Bool
     }
 
 
@@ -24,12 +38,31 @@ init =
         commands =
             Cmd.batch [ Cmd.map Editor editorCmd, Cmd.none ]
     in
-        ( { editor = editor }, commands )
+        ( { stage = StageTextEntry
+          , editor = editor
+          , nextParseId = 0
+          , pendingParseId = -1
+          , hasParsed = False
+          }
+        , commands
+        )
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update message model =
     case message of
+        StageForward ->
+            if canStageForward model then
+                stepStageForward model
+            else
+                ( model, Cmd.none )
+
+        StageBack ->
+            if canStageBack model then
+                stepStageBack model
+            else
+                ( model, Cmd.none )
+
         Editor editorMsg ->
             let
                 ( editor, editorCmd, editorEvent ) =
@@ -44,6 +77,78 @@ update message model =
                     , commandsFromEvent
                     ]
                 )
+
+
+stageOrder : Stage -> Int
+stageOrder stage =
+    case stage of
+        StageTextEntry ->
+            0
+
+        StageWaitingForParse ->
+            1
+
+        StageConfigMadlib ->
+            2
+
+
+stepStageForward : Model -> ( Model, Cmd Msg )
+stepStageForward model =
+    case model.stage of
+        StageTextEntry ->
+            ( { model
+                | stage = StageWaitingForParse
+                , editor = Editor.disable model.editor
+              }
+            , Cmd.none
+            )
+
+        StageWaitingForParse ->
+            ( { model | stage = StageConfigMadlib }, Cmd.none )
+
+        StageConfigMadlib ->
+            ( model, Cmd.none )
+
+
+canStageForward : Model -> Bool
+canStageForward model =
+    case model.stage of
+        StageTextEntry ->
+            (String.length model.editor.content) > 0
+
+        StageWaitingForParse ->
+            -- placeholder
+            model.hasParsed
+
+        StageConfigMadlib ->
+            -- placeholder
+            False
+
+
+stepStageBack : Model -> ( Model, Cmd Msg )
+stepStageBack model =
+    case model.stage of
+        StageTextEntry ->
+            ( model, Cmd.none )
+
+        StageWaitingForParse ->
+            ( { model | stage = StageTextEntry }, Cmd.none )
+
+        StageConfigMadlib ->
+            ( { model | stage = StageTextEntry }, Cmd.none )
+
+
+canStageBack : Model -> Bool
+canStageBack model =
+    case model.stage of
+        StageTextEntry ->
+            False
+
+        StageWaitingForParse ->
+            True
+
+        StageConfigMadlib ->
+            True
 
 
 updateByEditorEvent : Editor.Event -> Model -> ( Model, Cmd Msg )
@@ -64,8 +169,80 @@ subscriptions model =
 view : Model -> Html Msg
 view model =
     Html.div [ Attr.id "app" ]
-        [ App.map Editor (Editor.view model.editor)
+        (List.append (cardViews model)
+            [ Html.div []
+                [ Html.text (toString model.stage)
+                ]
+            , stepForwardView model
+            , stepBackView model
+            ]
+        )
+
+
+cardViews : Model -> List (Html Msg)
+cardViews model =
+    [ (textEntryCardView model)
+    , (waitingForParseCardView model)
+    ]
+
+
+textEntryCardView : Model -> Html Msg
+textEntryCardView model =
+    Html.div [ cardClassList model.stage StageTextEntry ]
+        [ App.map Editor (Editor.view model.editor) ]
+
+
+waitingForParseCardView : Model -> Html Msg
+waitingForParseCardView model =
+    Html.div [ cardClassList model.stage StageWaitingForParse ]
+        [ Html.div
+            [ Attr.id "waiting-for-parse"
+            , Attr.class "card-contents"
+            ]
+            [ Html.text "Parsing..." ]
         ]
+
+
+cardClassList : Stage -> Stage -> Html.Attribute Msg
+cardClassList currentStage cardStage =
+    let
+        current =
+            stageOrder currentStage
+
+        card =
+            stageOrder cardStage
+    in
+        Attr.classList
+            [ ( "card", True )
+            , ( "discarded", card < current )
+            , ( "pending", card > current )
+            ]
+
+
+stepForwardView : Model -> Html Msg
+stepForwardView model =
+    Html.div
+        [ Attr.id "step-forward"
+        , Attr.classList
+            [ ( "stepper", True )
+            , ( "enabled", (canStageForward model) )
+            ]
+        , onClick StageForward
+        ]
+        [ Html.text ">" ]
+
+
+stepBackView : Model -> Html Msg
+stepBackView model =
+    Html.div
+        [ Attr.id "step-back"
+        , Attr.classList
+            [ ( "stepper", True )
+            , ( "enabled", (canStageBack model) )
+            ]
+        , onClick StageBack
+        ]
+        [ Html.text "<" ]
 
 
 main : Program Never

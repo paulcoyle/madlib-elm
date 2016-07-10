@@ -1,5 +1,11 @@
 global-reset()
 
+$_cardWidth = 500px
+$_halfCardWidth = $_cardWidth / 2
+$_stepperSize = 100px
+$_halfStepperSize = $_stepperSize / 2
+$_quarterStepperSize = $_halfStepperSize / 2
+
 #app
   position: absolute
   top: 0
@@ -9,21 +15,75 @@ global-reset()
   overflow: hidden
   background-color: #ccd
 
-.editor
-  margin: 0 auto
+.stepper
+  position: absolute
+  width: $_stepperSize
+  height: $_stepperSize
+  top: 50%
+  left: 50%
+  border-radius: 50%
+  background-color: shade(#ccd, 5%)
+  text-align: center
+  line-height: $_stepperSize
+  box-shadow: 0px 0px 10px 0px rgba(0, 0, 0, 0.3)
+  transition: transform 0.2s ease-in-out,
+              background-color 0.2s ease-in-out
+
+  &.enabled
+    background-color: #f93
+
+$_stepForwardX = -($_halfStepperSize) + $_halfCardWidth
+#step-forward
+  transform: translate($_stepForwardX - $_quarterStepperSize, -($_halfStepperSize))
+
+  &.enabled
+    transform: translate($_stepForwardX, -($_halfStepperSize))
+
+$_stepBackX = -($_halfStepperSize) - $_halfCardWidth
+#step-back
+  transform: translate($_stepBackX + $_quarterStepperSize, -($_halfStepperSize))
+
+  &.enabled
+    transform: translate($_stepBackX, -($_halfStepperSize))
+
+.card
+  position: absolute
+  width: $_cardWidth
   padding: 50px 0
-  width: 500px
   height: 100%
   box-sizing: border-box
+  left: 50%
+  transform: translate(-50%, 0%) scale(1.0) rotateY(0deg) perspective(300px)
+  transform-style: flat
+  transform-origin: -50%
+  visibility: visible
+  z-index: 100
+  transition: transform 0.3s ease-in-out,
+              visibility 0.3s ease-in-out
+
+  &.pending
+    transform: translate(200%, 0%) scale(0.5) rotateY(-45deg)
+    visibility: hidden
+
+  &.discarded
+    transform: translate(-200%, 0%) scale(0.5) rotateY(45deg)
+    visibility: hidden
+
+.card-contents
+  height: 100%
+  box-shadow: 0px 0px 10px 0px rgba(0, 0, 0, 0.3)
+  background-color: #fff
+  border: 1px solid #99a
+  border-radius: 5px
+  overflow: hidden
 
 .editor-input
   width: 100%
   height: 100%
   padding: 20px
   font-size: 40px
-  box-sizing: border-box
-  border: 1px solid #99a
-  border-radius: 5px
   overflow: hidden
-  box-shadow: 0px 0px 10px 0px rgba(0, 0, 0, 0.3)
   resize: none
+  outline: none
+  box-sizing: border-box
+  border: none

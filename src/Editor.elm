@@ -3,14 +3,12 @@ module Editor exposing (..)
 import Html exposing (Html, Attribute)
 import Html.Attributes as Attr
 import Html.Events exposing (onInput, onFocus, onBlur, onClick)
-import String
 
 
 type Msg
     = Change String
     | Focus
     | Blur
-    | Make
     | Clear
 
 
@@ -65,9 +63,6 @@ update message model =
         Blur ->
             ( { model | focused = False }, Cmd.none, EventNone )
 
-        Make ->
-            ( model, Cmd.none, EventMake )
-
         Clear ->
             ( { model | content = "" }, Cmd.none, EventNone )
 
@@ -76,7 +71,7 @@ view : Model -> Html Msg
 view model =
     Html.div
         [ Attr.classList
-            [ ( "editor", True )
+            [ ( "card-contents", True )
             , ( "focused", model.focused )
             ]
         ]
@@ -90,25 +85,4 @@ view model =
             , onBlur Blur
             ]
             []
-        , controlsView model
         ]
-
-
-controlsView : Model -> Html Msg
-controlsView model =
-    let
-        active =
-            model.enabled && ((String.length model.content) > 0)
-    in
-        Html.div [ Attr.class "editor-controls" ]
-            [ Html.button
-                [ Attr.disabled (not active)
-                , onClick Make
-                ]
-                [ Html.text "Make" ]
-            , Html.button
-                [ Attr.disabled (not active)
-                , onClick Clear
-                ]
-                [ Html.text "Clear" ]
-            ]
