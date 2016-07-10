@@ -14,6 +14,8 @@ $_quarterStepperSize = $_halfStepperSize / 2
   bottom: 0
   overflow: hidden
   background-color: #ccd
+  perspective: 800px
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif
 
 // This is needed because we have to add a wrapper around the svg node
 // because there is an error using the class attribute on an svg node
@@ -88,26 +90,26 @@ $_cardEaseDur = 0.8s
   height: 100%
   box-sizing: border-box
   left: 50%
-  transform: translate(-50%, 0%) scale(1.0) rotateY(0deg) perspective(300px)
+  transform: translate(-50%, 0%) rotateY(0deg)
   transform-style: flat
-  transform-origin: -50%
   visibility: visible
   z-index: 100
-  -webkit-filter: brightness(100%) blur(0px)
+  -webkit-filter: brightness(100%)
   transition: transform $_cardEaseDur ease-in-out,
               visibility $_cardEaseDur ease-in-out
   -webkit-transition: transform $_cardEaseDur ease-in-out,
                       visibility $_cardEaseDur ease-in-out,
                       -webkit-filter $_cardEaseDur linear
 
-  &.pending
-    transform: translate(200%, 0%) scale(0.5) rotateY(-45deg)
+  &.pending, &.discarded
+    -webkit-filter: brightness(50%)
     visibility: hidden
 
+  &.pending
+    transform: translate(150vw, 0%) rotateY(-90deg)
+
   &.discarded
-    -webkit-filter: brightness(50%) blur(32px)
-    transform: translate(-200%, 0%) scale(0.5) rotateY(45deg)
-    visibility: hidden
+    transform: translate(-150vw, 0%) rotateY(90deg)
 
 .card-contents
   height: 100%
@@ -122,8 +124,45 @@ $_cardEaseDur = 0.8s
   height: 100%
   padding: 20px
   font-size: 40px
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif
   overflow: hidden
   resize: none
   outline: none
   box-sizing: border-box
   border: none
+
+@keyframes spin {
+  from {
+    transform: translate(-50%, -50%) rotateZ(0deg)
+  }
+
+  to {
+    transform: translate(-50%, -50%) rotateZ(360deg)
+  }
+}
+
+#waiting-for-parse
+  .message, .icon
+    position: absolute
+    top: 50%
+    left: 50%
+    transform: translate(-50%, -50%)
+
+  .message
+    width: 100%
+    font-size: 40px
+    line-height: 54px
+    text-align: center
+    color: shade(#ccd, 35%)
+    padding: 0px 40px
+    box-sizing: border-box
+
+  .icon
+    position: absolute
+    width: 350px
+    height: 350px
+    fill: lighten(#ccd, 50%)
+    animation-name: spin
+    animation-duration: 2s
+    animation-iteration-count: infinite
+    animation-timing-function: linear

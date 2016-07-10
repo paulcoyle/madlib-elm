@@ -5,6 +5,7 @@ import Html.App as App
 import Html.Attributes as Attr
 import Html.Events exposing (onClick)
 import Editor
+import WorkingCard
 import String
 import Icon
 
@@ -15,6 +16,7 @@ type Msg
     | Editor Editor.Msg
       -- These Icon messages are ignored.
     | Icon Icon.Msg
+    | WorkingCard WorkingCard.Msg
 
 
 type Stage
@@ -80,6 +82,9 @@ update message model =
                 )
 
         Icon _ ->
+            ( model, Cmd.none )
+
+        WorkingCard _ ->
             ( model, Cmd.none )
 
 
@@ -209,11 +214,10 @@ textEntryCardView model =
 waitingForParseCardView : Model -> Html Msg
 waitingForParseCardView model =
     Html.div [ cardClassList model.stage StageWaitingForParse ]
-        [ Html.div
-            [ Attr.id "waiting-for-parse"
-            , Attr.class "card-contents"
-            ]
-            [ Html.text "Parsing..." ]
+        [ App.map WorkingCard
+            (WorkingCard.view "waiting-for-parse"
+                "Parsing your Madlib thanks to the Stanford Core NLP library..."
+            )
         ]
 
 

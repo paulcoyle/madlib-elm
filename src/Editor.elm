@@ -1,6 +1,6 @@
 module Editor exposing (..)
 
-import Html exposing (Html, Attribute)
+import Html exposing (Html)
 import Html.Attributes as Attr
 import Html.Events exposing (onInput, onFocus, onBlur, onClick)
 
