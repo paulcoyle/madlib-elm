@@ -27,6 +27,12 @@ module.exports = {
         test: /\.styl$/,
         loader: 'style-loader!css-loader!stylus-loader',
         exclude: [/elm-stuff/, /node_modules/]
+      }, {
+        test: /\.svg$/,
+        loader: 'svg-sprite?' + JSON.stringify({
+          name: 'icon-[name]',
+          prefixize: false
+        })
       }
     ]
   },

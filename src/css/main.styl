@@ -15,6 +15,14 @@ $_quarterStepperSize = $_halfStepperSize / 2
   overflow: hidden
   background-color: #ccd
 
+// This is needed because we have to add a wrapper around the svg node
+// because there is an error using the class attribute on an svg node
+// in the elm library.
+.icon > svg
+  position: absolute
+  width: 100%
+  height: 100%
+
 .stepper
   position: absolute
   width: $_stepperSize
@@ -23,29 +31,56 @@ $_quarterStepperSize = $_halfStepperSize / 2
   left: 50%
   border-radius: 50%
   background-color: shade(#ccd, 5%)
-  text-align: center
-  line-height: $_stepperSize
   box-shadow: 0px 0px 10px 0px rgba(0, 0, 0, 0.3)
   transition: transform 0.2s ease-in-out,
               background-color 0.2s ease-in-out
 
   &.enabled
+    cursor: pointer
     background-color: #f93
+
+    .icon
+      fill: shade(#f93, 15%)
+
+  .icon
+    position: absolute
+    top: 10px
+    left: 22.5px
+    width: 55px
+    height: 80px
+    transform: translate(0%, 0%)
+    fill: shade(#ccd, 5%)
+    transition: transform 0.2s ease-in-out,
+                fill 0.2s ease-in-out
 
 $_stepForwardX = -($_halfStepperSize) + $_halfCardWidth
 #step-forward
   transform: translate($_stepForwardX - $_quarterStepperSize, -($_halfStepperSize))
+  .icon
+    transform: translate(8px, 0px)
 
   &.enabled
     transform: translate($_stepForwardX, -($_halfStepperSize))
 
+    &:hover
+      .icon
+        transform: translate(50%, 0%)
+
+
 $_stepBackX = -($_halfStepperSize) - $_halfCardWidth
 #step-back
   transform: translate($_stepBackX + $_quarterStepperSize, -($_halfStepperSize))
+  .icon
+    transform: translate(-5px, 0px)
 
   &.enabled
     transform: translate($_stepBackX, -($_halfStepperSize))
 
+    &:hover
+      .icon
+        transform: translate(-50%, 0%)
+
+$_cardEaseDur = 0.8s
 .card
   position: absolute
   width: $_cardWidth
@@ -58,14 +93,19 @@ $_stepBackX = -($_halfStepperSize) - $_halfCardWidth
   transform-origin: -50%
   visibility: visible
   z-index: 100
-  transition: transform 0.3s ease-in-out,
-              visibility 0.3s ease-in-out
+  -webkit-filter: brightness(100%) blur(0px)
+  transition: transform $_cardEaseDur ease-in-out,
+              visibility $_cardEaseDur ease-in-out
+  -webkit-transition: transform $_cardEaseDur ease-in-out,
+                      visibility $_cardEaseDur ease-in-out,
+                      -webkit-filter $_cardEaseDur linear
 
   &.pending
     transform: translate(200%, 0%) scale(0.5) rotateY(-45deg)
     visibility: hidden
 
   &.discarded
+    -webkit-filter: brightness(50%) blur(32px)
     transform: translate(-200%, 0%) scale(0.5) rotateY(45deg)
     visibility: hidden
 

@@ -6,12 +6,15 @@ import Html.Attributes as Attr
 import Html.Events exposing (onClick)
 import Editor
 import String
+import Icon
 
 
 type Msg
     = StageForward
     | StageBack
     | Editor Editor.Msg
+      -- These Icon messages are ignored.
+    | Icon Icon.Msg
 
 
 type Stage
@@ -25,7 +28,6 @@ type alias Model =
     , editor : Editor.Model
     , nextParseId : Int
     , pendingParseId : Int
-    , hasParsed : Bool
     }
 
 
@@ -42,7 +44,6 @@ init =
           , editor = editor
           , nextParseId = 0
           , pendingParseId = -1
-          , hasParsed = False
           }
         , commands
         )
@@ -77,6 +78,9 @@ update message model =
                     , commandsFromEvent
                     ]
                 )
+
+        Icon _ ->
+            ( model, Cmd.none )
 
 
 stageOrder : Stage -> Int
@@ -118,7 +122,7 @@ canStageForward model =
 
         StageWaitingForParse ->
             -- placeholder
-            model.hasParsed
+            False
 
         StageConfigMadlib ->
             -- placeholder
@@ -132,10 +136,20 @@ stepStageBack model =
             ( model, Cmd.none )
 
         StageWaitingForParse ->
-            ( { model | stage = StageTextEntry }, Cmd.none )
+            ( { model
+                | stage = StageTextEntry
+                , editor = Editor.enable model.editor
+              }
+            , Cmd.none
+            )
 
         StageConfigMadlib ->
-            ( { model | stage = StageTextEntry }, Cmd.none )
+            ( { model
+                | stage = StageTextEntry
+                , editor = Editor.enable model.editor
+              }
+            , Cmd.none
+            )
 
 
 canStageBack : Model -> Bool
@@ -229,7 +243,7 @@ stepForwardView model =
             ]
         , onClick StageForward
         ]
-        [ Html.text ">" ]
+        [ App.map Icon (Icon.view "chevron-right") ]
 
 
 stepBackView : Model -> Html Msg
@@ -242,7 +256,7 @@ stepBackView model =
             ]
         , onClick StageBack
         ]
-        [ Html.text "<" ]
+        [ App.map Icon (Icon.view "chevron-left") ]
 
 
 main : Program Never
