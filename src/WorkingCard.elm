@@ -18,4 +18,6 @@ view id message =
         ]
         [ App.map NoOp (Icon.view "cog")
         , Html.p [ Attr.class "message" ] [ Html.text message ]
+        , Html.p [ Attr.class "info" ]
+            [ Html.text "Parsing courtesy of the Stanford Core NLP Library" ]
         ]

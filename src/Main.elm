@@ -1,4 +1,4 @@
-module Main exposing (..)
+port module Main exposing (..)
 
 import Html exposing (Html)
 import Html.App as App
@@ -13,6 +13,7 @@ import Icon
 type Msg
     = StageForward
     | StageBack
+    | ReceiveParse ParseResponse
     | Editor Editor.Msg
       -- These Icon messages are ignored.
     | Icon Icon.Msg
@@ -28,9 +29,18 @@ type Stage
 type alias Model =
     { stage : Stage
     , editor : Editor.Model
-    , nextParseId : Int
-    , pendingParseId : Int
+    , lastParseId : Int
+    , lastGoodParseId : Int
+    , lastParse : List Parse
     }
+
+
+type alias Parse =
+    { kind : String, value : String }
+
+
+type alias ParseResponse =
+    ( Int, Bool, List Parse )
 
 
 init : ( Model, Cmd Msg )
@@ -44,11 +54,15 @@ init =
     in
         ( { stage = StageTextEntry
           , editor = editor
-          , nextParseId = 0
-          , pendingParseId = -1
+          , lastParseId = 0
+          , lastGoodParseId = -1
+          , lastParse = []
           }
         , commands
         )
+
+
+port parse : ( Int, String ) -> Cmd msg
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -81,11 +95,36 @@ update message model =
                     ]
                 )
 
+        ReceiveParse ( id, success, parseData ) ->
+            let
+                lastGood =
+                    if success then
+                        id
+                    else
+                        model.lastGoodParseId
+
+                -- Add stage change here to auto step forward
+            in
+                ( { model
+                    | lastGoodParseId = lastGood
+                    , lastParse = parseData
+                  }
+                , Cmd.none
+                )
+
         Icon _ ->
             ( model, Cmd.none )
 
         WorkingCard _ ->
             ( model, Cmd.none )
+
+
+port parsed : (ParseResponse -> msg) -> Sub msg
+
+
+subscriptions : Model -> Sub Msg
+subscriptions model =
+    parsed ReceiveParse
 
 
 stageOrder : Stage -> Int
@@ -105,12 +144,17 @@ stepStageForward : Model -> ( Model, Cmd Msg )
 stepStageForward model =
     case model.stage of
         StageTextEntry ->
-            ( { model
-                | stage = StageWaitingForParse
-                , editor = Editor.disable model.editor
-              }
-            , Cmd.none
-            )
+            let
+                nextId =
+                    model.lastParseId + 1
+            in
+                ( { model
+                    | stage = StageWaitingForParse
+                    , editor = Editor.disable model.editor
+                    , lastParseId = nextId
+                  }
+                , parse ( nextId, model.editor.content )
+                )
 
         StageWaitingForParse ->
             ( { model | stage = StageConfigMadlib }, Cmd.none )
@@ -126,8 +170,7 @@ canStageForward model =
             (String.length model.editor.content) > 0
 
         StageWaitingForParse ->
-            -- placeholder
-            False
+            model.lastParseId == model.lastGoodParseId
 
         StageConfigMadlib ->
             -- placeholder
@@ -180,11 +223,6 @@ updateByEditorEvent event model =
             ( model, Cmd.none )
 
 
-subscriptions : Model -> Sub Msg
-subscriptions model =
-    Sub.none
-
-
 view : Model -> Html Msg
 view model =
     Html.div [ Attr.id "app" ]
@@ -213,12 +251,17 @@ textEntryCardView model =
 
 waitingForParseCardView : Model -> Html Msg
 waitingForParseCardView model =
-    Html.div [ cardClassList model.stage StageWaitingForParse ]
-        [ App.map WorkingCard
-            (WorkingCard.view "waiting-for-parse"
-                "Parsing your Madlib thanks to the Stanford Core NLP library..."
-            )
-        ]
+    let
+        message =
+            if model.lastParseId == model.lastGoodParseId then
+                "Parsing complete!"
+            else
+                "Parsing your Madlib..."
+    in
+        Html.div [ cardClassList model.stage StageWaitingForParse ]
+            [ App.map WorkingCard
+                (WorkingCard.view "waiting-for-parse" message)
+            ]
 
 
 cardClassList : Stage -> Stage -> Html.Attribute Msg

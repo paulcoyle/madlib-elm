@@ -24,6 +24,13 @@ module.exports = {
         loader: 'elm-webpack',
         exclude: [/elm-stuff/, /node_modules/]
       }, {
+        test: /\.js$/,
+        loader: 'babel',
+        exclude: [/elm-stuff/, /node_modules/],
+        query: {
+          presets: ['es2015']
+        }
+      }, {
         test: /\.styl$/,
         loader: 'style-loader!css-loader!stylus-loader',
         exclude: [/elm-stuff/, /node_modules/]
@@ -32,7 +39,8 @@ module.exports = {
         loader: 'svg-sprite?' + JSON.stringify({
           name: 'icon-[name]',
           prefixize: false
-        })
+        }),
+        exclude: [/elm-stuff/, /node_modules/],
       }
     ]
   },
