@@ -5,7 +5,9 @@ import Html.App as App
 import Html.Attributes as Attr
 import Html.Events exposing (onClick)
 import Editor
+import Parse exposing (Parse)
 import WorkingCard
+import ConfigCard
 import String
 import Icon
 
@@ -18,6 +20,7 @@ type Msg
       -- These Icon messages are ignored.
     | Icon Icon.Msg
     | WorkingCard WorkingCard.Msg
+    | ConfigCard ConfigCard.Msg
 
 
 type Stage
@@ -31,12 +34,9 @@ type alias Model =
     , editor : Editor.Model
     , lastParseId : Int
     , lastGoodParseId : Int
-    , lastParse : List Parse
+    , lastParse : Maybe (List Parse)
+    , configureCard : ConfigCard.Model
     }
-
-
-type alias Parse =
-    { kind : String, value : String }
 
 
 type alias ParseResponse =
@@ -49,14 +49,22 @@ init =
         ( editor, editorCmd ) =
             Editor.init
 
+        ( configureCard, configureCmd ) =
+            ConfigCard.init Nothing
+
         commands =
-            Cmd.batch [ Cmd.map Editor editorCmd, Cmd.none ]
+            Cmd.batch
+                [ Cmd.map Editor editorCmd
+                , Cmd.map ConfigCard configureCmd
+                , Cmd.none
+                ]
     in
         ( { stage = StageTextEntry
           , editor = editor
           , lastParseId = 0
           , lastGoodParseId = -1
-          , lastParse = []
+          , lastParse = Nothing
+          , configureCard = configureCard
           }
         , commands
         )
@@ -103,13 +111,20 @@ update message model =
                     else
                         model.lastGoodParseId
 
+                lastParse =
+                    Just parseData
+
+                ( configureCard, configureCmd ) =
+                    ConfigCard.init lastParse
+
                 -- Add stage change here to auto step forward
             in
                 ( { model
                     | lastGoodParseId = lastGood
-                    , lastParse = parseData
+                    , lastParse = lastParse
+                    , configureCard = configureCard
                   }
-                , Cmd.none
+                , Cmd.map ConfigCard configureCmd
                 )
 
         Icon _ ->
@@ -117,6 +132,15 @@ update message model =
 
         WorkingCard _ ->
             ( model, Cmd.none )
+
+        ConfigCard configureMsg ->
+            let
+                ( configureCard, configureCmd ) =
+                    ConfigCard.update configureMsg model.configureCard
+            in
+                ( { model | configureCard = configureCard }
+                , Cmd.map ConfigCard configureCmd
+                )
 
 
 port parsed : (ParseResponse -> msg) -> Sub msg
@@ -240,6 +264,7 @@ cardViews : Model -> List (Html Msg)
 cardViews model =
     [ (textEntryCardView model)
     , (waitingForParseCardView model)
+    , (configureCardView model)
     ]
 
 
@@ -262,6 +287,14 @@ waitingForParseCardView model =
             [ App.map WorkingCard
                 (WorkingCard.view "waiting-for-parse" message)
             ]
+
+
+configureCardView : Model -> Html Msg
+configureCardView model =
+    Html.div [ cardClassList model.stage StageConfigMadlib ]
+        [ App.map ConfigCard
+            (ConfigCard.view model.configureCard)
+        ]
 
 
 cardClassList : Stage -> Stage -> Html.Attribute Msg
