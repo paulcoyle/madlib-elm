@@ -103,8 +103,16 @@ function getOrCreateLastToken(corpus) {
 }
 
 function convertToken(token) {
+  let kind = typeNotApplicable
+
+  // Contractions appear to produce a separate fragment for the
+  // existential portion.  I don't want to deal with those.
+  if (token.word.match(/^\'/) === null) {
+    kind = classifyByPos(token.pos)
+  }
+
   return {
-    kind: classifyByPos(token.pos),
+    kind: kind,
     value: token.word
   }
 }

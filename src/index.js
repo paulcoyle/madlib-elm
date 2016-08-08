@@ -1,13 +1,13 @@
 import { fetchNlpData, simplifyNlpData } from './corenlp.js'
 
-const Elm = require('./Main');
+const Elm = require('./Main')
 
-require( './css/main.styl' );
+require( './css/main.styl' )
 
-let svgFiles = require.context('./svg', true, /.+\.svg$/);
-svgFiles.keys().forEach(svgFiles);
+let svgFiles = require.context('./svg', true, /.+\.svg$/)
+svgFiles.keys().forEach(svgFiles)
 
-let app = Elm.Main.embed(document.getElementById('main'));
+let app = Elm.Main.embed(document.getElementById('main'))
 
 app.ports.parse.subscribe((tup) => {
   let id = tup[0]
@@ -20,7 +20,7 @@ app.ports.parse.subscribe((tup) => {
     .catch(() => {
       app.ports.parsed.send([id, false, []]);
     })
-});
+})
 
 app.ports.positionControls.subscribe((id) => {
   let frag = document.getElementById(id)
@@ -30,12 +30,13 @@ app.ports.positionControls.subscribe((id) => {
     return
   }
 
+  // Group measurements to minimize reflows
   let fragDims = measure(frag)
   let controlDims = measure(controls)
   let parentDims = measure(controls.parentNode)
 
   let x = centerHorizontal(fragDims, controlDims)
-  let y = fragDims.y + fragDims.h
+  let y = fragDims.y + fragDims.h + 5
 
   if (x < 0) {
     x = 0
@@ -44,7 +45,7 @@ app.ports.positionControls.subscribe((id) => {
   }
 
   if (y > (parentDims.h - controlDims.h)) {
-    y = fragDims.y - controlDims.h
+    y = fragDims.y - controlDims.h - 5
   }
 
   controls.style.transform = `translate(${x}px, ${y}px)`
