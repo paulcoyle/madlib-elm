@@ -70,19 +70,28 @@ update message model =
 view : Model -> Html Msg
 view model =
     Html.div
-        [ Attr.classList
-            [ ( "card-contents", True )
-            , ( "focused", model.focused )
-            ]
+        [ Attr.class "card-contents"
         ]
-        [ Html.textarea
-            [ Attr.class "editor-input"
-            , Attr.placeholder "Type in here to make a madlib..."
-            , Attr.value model.content
-            , Attr.disabled (not model.enabled)
-            , onInput Change
-            , onFocus Focus
-            , onBlur Blur
+        [ Html.div
+            [ Attr.class "card-instructions"
             ]
-            []
+            [ Html.text "Enter a madlib below and, when you're done, move forward to continue."
+            ]
+        , Html.div
+            [ Attr.classList
+                [ ( "card-body", True )
+                , ( "focused", model.focused )
+                ]
+            ]
+            [ Html.textarea
+                [ Attr.class "editor-input big-text"
+                , Attr.placeholder "Type in here to make a madlib..."
+                , Attr.value model.content
+                , Attr.disabled (not model.enabled)
+                , onInput Change
+                , onFocus Focus
+                , onBlur Blur
+                ]
+                []
+            ]
         ]

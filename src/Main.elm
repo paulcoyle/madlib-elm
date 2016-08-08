@@ -26,7 +26,8 @@ type Msg
 type Stage
     = StageTextEntry
     | StageWaitingForParse
-    | StageConfigMadlib
+    | StageConfigure
+    | StageGenerate
 
 
 type alias Model =
@@ -118,9 +119,12 @@ update message model =
                     ConfigCard.init lastParse
 
                 -- Add stage change here to auto step forward
+                stage =
+                    StageConfigure
             in
                 ( { model
-                    | lastGoodParseId = lastGood
+                    | stage = stage
+                    , lastGoodParseId = lastGood
                     , lastParse = lastParse
                     , configureCard = configureCard
                   }
@@ -160,8 +164,11 @@ stageOrder stage =
         StageWaitingForParse ->
             1
 
-        StageConfigMadlib ->
+        StageConfigure ->
             2
+
+        StageGenerate ->
+            3
 
 
 stepStageForward : Model -> ( Model, Cmd Msg )
@@ -181,9 +188,12 @@ stepStageForward model =
                 )
 
         StageWaitingForParse ->
-            ( { model | stage = StageConfigMadlib }, Cmd.none )
+            ( { model | stage = StageConfigure }, Cmd.none )
 
-        StageConfigMadlib ->
+        StageConfigure ->
+            ( { model | stage = StageGenerate }, Cmd.none )
+
+        StageGenerate ->
             ( model, Cmd.none )
 
 
@@ -196,8 +206,11 @@ canStageForward model =
         StageWaitingForParse ->
             model.lastParseId == model.lastGoodParseId
 
-        StageConfigMadlib ->
+        StageConfigure ->
             -- placeholder
+            False
+
+        StageGenerate ->
             False
 
 
@@ -215,13 +228,16 @@ stepStageBack model =
             , Cmd.none
             )
 
-        StageConfigMadlib ->
+        StageConfigure ->
             ( { model
                 | stage = StageTextEntry
                 , editor = Editor.enable model.editor
               }
             , Cmd.none
             )
+
+        StageGenerate ->
+            ( { model | stage = StageConfigure }, Cmd.none )
 
 
 canStageBack : Model -> Bool
@@ -233,7 +249,10 @@ canStageBack model =
         StageWaitingForParse ->
             True
 
-        StageConfigMadlib ->
+        StageConfigure ->
+            True
+
+        StageGenerate ->
             True
 
 
@@ -250,12 +269,12 @@ updateByEditorEvent event model =
 view : Model -> Html Msg
 view model =
     Html.div [ Attr.id "app" ]
-        (List.append (cardViews model)
-            [ Html.div []
-                [ Html.text (toString model.stage)
-                ]
-            , stepForwardView model
-            , stepBackView model
+        (List.concat
+            [ (stagesView model)
+            , (cardViews model)
+            , [ stepForwardView model
+              , stepBackView model
+              ]
             ]
         )
 
@@ -291,7 +310,7 @@ waitingForParseCardView model =
 
 configureCardView : Model -> Html Msg
 configureCardView model =
-    Html.div [ cardClassList model.stage StageConfigMadlib ]
+    Html.div [ cardClassList model.stage StageConfigure ]
         [ App.map ConfigCard
             (ConfigCard.view model.configureCard)
         ]
@@ -337,6 +356,79 @@ stepBackView model =
         , onClick StageBack
         ]
         [ App.map Icon (Icon.view "chevron-left") ]
+
+
+type alias StagesMapData =
+    { passedCurrent : Bool
+    , stages : List ( String, String )
+    }
+
+
+stagesView : Model -> List (Html Msg)
+stagesView model =
+    let
+        mapData : StagesMapData
+        mapData =
+            StagesMapData False []
+
+        orderedStages : List Stage
+        orderedStages =
+            List.sortBy stageOrder
+                [ StageTextEntry, StageWaitingForParse, StageConfigure, StageGenerate ]
+
+        mapper : Stage -> StagesMapData -> StagesMapData
+        mapper stage data =
+            let
+                label =
+                    stageAsString stage
+
+                class =
+                    if data.passedCurrent then
+                        "unreached"
+                    else
+                        "reached"
+            in
+                if stage == model.stage then
+                    { data
+                        | passedCurrent = True
+                        , stages = List.append data.stages [ ( "current", label ) ]
+                    }
+                else
+                    { data
+                        | stages = List.append data.stages [ ( class, label ) ]
+                    }
+
+        displayData =
+            List.foldl mapper mapData orderedStages
+
+        displayMarkup stage =
+            Html.div
+                [ Attr.class ("stage-map-item " ++ (fst stage)) ]
+                [ Html.text (snd stage) ]
+    in
+        [ Html.div
+            [ Attr.id "stage-map" ]
+            (List.map
+                displayMarkup
+                displayData.stages
+            )
+        ]
+
+
+stageAsString : Stage -> String
+stageAsString stage =
+    case stage of
+        StageTextEntry ->
+            "Write"
+
+        StageWaitingForParse ->
+            "Parse"
+
+        StageConfigure ->
+            "Configure"
+
+        StageGenerate ->
+            "Sensible Chuckles"
 
 
 main : Program Never

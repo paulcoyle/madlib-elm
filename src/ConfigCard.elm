@@ -3,11 +3,16 @@ module ConfigCard exposing (..)
 import List
 import Html exposing (Html)
 import Html.Attributes as Attr
+import Html.Events as Events
 import Parse exposing (Parse)
+import String
 
 
 type Msg
-    = NoOp
+    = StartConfiguring Int
+    | SetConfiguration Int Int
+    | StopConfiguring Int
+    | Unconfigure Int
 
 
 type FragKind
@@ -19,6 +24,7 @@ type FragKind
 type Fragment
     = Plain String
     | Configurable FragKind String
+    | Configuring FragKind String Int
     | Configured FragKind String Int
 
 
@@ -54,8 +60,8 @@ init parseData =
         parseDataToFragments parseData =
             case parseData of
                 Just data ->
-                    List.indexedMap (,)
-                        <| List.map parseDataToFragment data
+                    List.indexedMap (,) <|
+                        List.map parseDataToFragment data
 
                 Nothing ->
                     []
@@ -69,28 +75,58 @@ init parseData =
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
-    ( model, Cmd.none )
+    case msg of
+        StartConfiguring index ->
+            ( { model
+                | fragments = startConfiguringIndexed index model.fragments
+              }
+            , Cmd.none
+            )
+
+        SetConfiguration index num ->
+            ( { model
+                | fragments = configureIndexed index num model.fragments
+              }
+            , Cmd.none
+            )
+
+        StopConfiguring index ->
+            ( { model
+                | fragments = stopConfiguringIndexed index model.fragments
+              }
+            , Cmd.none
+            )
+
+        Unconfigure index ->
+            ( { model
+                | fragments = unconfigureIndexed index model.fragments
+              }
+            , Cmd.none
+            )
 
 
 view : Model -> Html Msg
 view model =
-    let
-        x =
-            Debug.log "zz" model.fragments
-    in
-        Html.div
-            [ Attr.id "configure-card"
-            , Attr.class "card-contents"
+    Html.div
+        [ Attr.id "configure-card"
+        , Attr.class "card-contents"
+        ]
+        [ Html.div
+            [ Attr.class "card-instructions"
             ]
-            [ Html.div [ Attr.class "fragments" ]
-                (List.map fragmentView
-                    <| List.map snd model.fragments
-                )
+            [ Html.text "Configure at least one of the words below, then continue forward to generate."
             ]
+        , Html.div
+            [ Attr.class "card-body"
+            ]
+            [ Html.div [ Attr.class "fragments big-text" ]
+                (List.map fragmentView model.fragments)
+            ]
+        ]
 
 
-fragmentView : Fragment -> Html Msg
-fragmentView fragment =
+fragmentView : ( Int, Fragment ) -> Html Msg
+fragmentView ( index, fragment ) =
     let
         fragmentClass : FragKind -> String
         fragmentClass kind =
@@ -103,55 +139,161 @@ fragmentView fragment =
 
                 Adj ->
                     "frag frag-adj"
-
-        ( content, className ) =
-            case fragment of
-                Plain value ->
-                    ( value, "frag frag-plain" )
-
-                Configurable kind value ->
-                    ( value, fragmentClass kind )
-
-                Configured kind value _ ->
-                    ( value, fragmentClass kind )
     in
-        Html.span [ Attr.class className ] [ Html.text content ]
+        case fragment of
+            Plain value ->
+                Html.span
+                    [ Attr.class "frag frag-plain" ]
+                    [ Html.text value ]
+
+            Configurable kind value ->
+                Html.span
+                    [ Attr.class (fragmentClass kind)
+                    , Events.onClick (StartConfiguring index)
+                    ]
+                    [ Html.text value ]
+
+            Configuring kind value num ->
+                Html.span
+                    [ Attr.class ((fragmentClass kind) ++ " frag-controlled") ]
+                    [ Html.div
+                        [ Attr.class "frag-controls" ]
+                        [ Html.span
+                            [ Attr.class "frag-lev-num" ]
+                            [ Html.text (toString num) ]
+                        , Html.span
+                            [ Attr.class "frag-config-cancel"
+                            , Events.onClick (Unconfigure index)
+                            ]
+                            [ Html.text "Don't Use" ]
+                        , Html.span
+                            [ Attr.class "frag-config-set"
+                            , Events.onClick (StopConfiguring index)
+                            ]
+                            [ Html.text "Done" ]
+                        ]
+                    , Html.div
+                        [ Attr.class "frag-word" ]
+                        [ Html.text value ]
+                    ]
+
+            Configured kind value num ->
+                Html.span
+                    [ Attr.class (fragmentClass kind) ]
+                    [ Html.span
+                        [ Attr.class "frag-reconfigure"
+                        , Events.onClick (StartConfiguring index)
+                        ]
+                        [ Html.text "Change" ]
+                    , Html.span
+                        [ Attr.class "frag-lev-num" ]
+                        [ Html.text (toString num) ]
+                    , Html.text value
+                    ]
 
 
-configure : Int -> Int -> FragmentList -> FragmentList
-configure configValue index list =
+startConfiguringIndexed : Int -> FragmentList -> FragmentList
+startConfiguringIndexed index list =
     let
         setMap : ( Int, Fragment ) -> Fragment
         setMap ( i, frag ) =
-            case frag of
-                Plain _ ->
-                    frag
-
-                Configurable kind value ->
-                    Configured kind value configValue
-
-                Configured kind value _ ->
-                    Configured kind value configValue
+            startConfiguring frag
     in
         modifyIndexed index setMap list
 
 
-unconfigure : Int -> FragmentList -> FragmentList
-unconfigure index list =
+startConfiguring : Fragment -> Fragment
+startConfiguring frag =
+    case frag of
+        Plain _ ->
+            frag
+
+        Configurable kind value ->
+            Configuring kind value (String.length value)
+
+        Configuring kind value num ->
+            Configuring kind value num
+
+        Configured kind value num ->
+            Configuring kind value num
+
+
+configureIndexed : Int -> Int -> FragmentList -> FragmentList
+configureIndexed configValue index list =
     let
         setMap : ( Int, Fragment ) -> Fragment
         setMap ( i, frag ) =
-            case frag of
-                Plain _ ->
-                    frag
-
-                Configurable _ _ ->
-                    frag
-
-                Configured kind value _ ->
-                    Configurable kind value
+            configure configValue frag
     in
         modifyIndexed index setMap list
+
+
+configure : Int -> Fragment -> Fragment
+configure configValue frag =
+    case frag of
+        Plain _ ->
+            frag
+
+        Configurable kind value ->
+            Configured kind value configValue
+
+        Configuring kind value _ ->
+            Configuring kind value configValue
+
+        Configured kind value _ ->
+            Configured kind value configValue
+
+
+stopConfiguringIndexed : Int -> FragmentList -> FragmentList
+stopConfiguringIndexed index list =
+    let
+        setMap : ( Int, Fragment ) -> Fragment
+        setMap ( i, frag ) =
+            stopConfiguring frag
+    in
+        modifyIndexed index setMap list
+
+
+stopConfiguring : Fragment -> Fragment
+stopConfiguring frag =
+    case frag of
+        Plain _ ->
+            frag
+
+        Configurable _ _ ->
+            frag
+
+        Configuring kind value num ->
+            Configured kind value num
+
+        Configured _ _ _ ->
+            frag
+
+
+unconfigureIndexed : Int -> FragmentList -> FragmentList
+unconfigureIndexed index list =
+    let
+        setMap : ( Int, Fragment ) -> Fragment
+        setMap ( i, frag ) =
+            unconfigure frag
+    in
+        modifyIndexed index setMap list
+
+
+unconfigure : Fragment -> Fragment
+unconfigure frag =
+    case frag of
+        Plain _ ->
+            frag
+
+        Configurable _ _ ->
+            frag
+
+        Configuring kind value _ ->
+            Configurable kind value
+
+        Configured kind value _ ->
+            Configurable kind value
 
 
 modifyIndexed : Int -> (( Int, a ) -> a) -> List ( Int, a ) -> List ( Int, a )

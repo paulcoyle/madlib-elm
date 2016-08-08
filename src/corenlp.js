@@ -68,6 +68,13 @@ export function simplifyNlpData(data) {
 
     return accum
   }, [])
+    .map((token) => {
+      if (token.kind === typeNotApplicable) {
+        token.value = token.value.trim()
+      }
+
+      return token
+    })
 }
 
 function foldSpecialToken(corpus, converted, original) {

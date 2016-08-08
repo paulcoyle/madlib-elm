@@ -1,8 +1,6 @@
 global-reset()
 
-$_cardWidth = 500px
-$_halfCardWidth = $_cardWidth / 2
-$_stepperSize = 100px
+$_stepperSize = 50px
 $_halfStepperSize = $_stepperSize / 2
 $_quarterStepperSize = $_halfStepperSize / 2
 
@@ -29,71 +27,122 @@ $_quarterStepperSize = $_halfStepperSize / 2
   position: absolute
   width: $_stepperSize
   height: $_stepperSize
-  top: 50%
-  left: 50%
   border-radius: 50%
-  background-color: shade(#ccd, 5%)
-  box-shadow: 0px 0px 10px 0px rgba(0, 0, 0, 0.3)
+  background-color: transparent
+  box-shadow: 0px 2px 0px rgba(0, 0, 0, 0)
   transition: transform 0.2s ease-in-out,
+              box-shadow 0.2s ease-in-out,
               background-color 0.2s ease-in-out
 
   &.enabled
     cursor: pointer
     background-color: #f93
+    box-shadow: 0px 2px 0px rgba(0, 0, 0, 0.2)
 
     .icon
       fill: shade(#f93, 15%)
 
+    &:hover
+      background-color: tint(#f93, 35%)
+
+      .icon
+        fill: #f93
+
   .icon
     position: absolute
-    top: 10px
-    left: 22.5px
-    width: 55px
-    height: 80px
+    top: (10px / 2)
+    left: (22.5px / 2)
+    width: (55px / 2)
+    height: (80px / 2)
     transform: translate(0%, 0%)
     fill: shade(#ccd, 5%)
     transition: transform 0.2s ease-in-out,
                 fill 0.2s ease-in-out
 
-$_stepForwardX = -($_halfStepperSize) + $_halfCardWidth
+#stage-map
+  position: absolute
+  display: flex
+  top: 0px
+  left: 60px
+  right: 60px
+  height: 60px
+  align-items: center
+  justify-content: center
+
+  .stage-map-item
+    font-size: 0.9em
+    padding: 6px 10px
+    margin: 0px 5px
+    border-radius: 18px
+    box-shadow: 0px 2px 0px rgba(0, 0, 0, 0.1)
+    transition: color 0.2s ease-in-out,
+                background-color 0.2s ease-in-out
+
+    &.reached
+      color: shade(#ccd, 25%)
+      background-color: shade(#f93, 35%)
+
+    &.current
+      color: #fff
+      background-color: shade(#f93, 15%)
+
+    &.unreached
+      color: tint(#ccd, 25%)
+      background-color: shade(#ccd, 25%)
+
 #step-forward
-  transform: translate($_stepForwardX - $_quarterStepperSize, -($_halfStepperSize))
+  top: 5px
+  right: 5px
+
   .icon
-    transform: translate(8px, 0px)
+    transform: translate(3px, 0px)
 
-  &.enabled
-    transform: translate($_stepForwardX, -($_halfStepperSize))
-
-    &:hover
-      .icon
-        transform: translate(50%, 0%)
-
-
-$_stepBackX = -($_halfStepperSize) - $_halfCardWidth
 #step-back
-  transform: translate($_stepBackX + $_quarterStepperSize, -($_halfStepperSize))
+  top: 5px
+  left: 5px
+
   .icon
-    transform: translate(-5px, 0px)
+    transform: translate(-2px, 0px)
 
-  &.enabled
-    transform: translate($_stepBackX, -($_halfStepperSize))
+// $_stepForwardX = -($_halfStepperSize) + $_halfCardWidth
+// #step-forward
+//   transform: translate($_stepForwardX - $_quarterStepperSize, -($_halfStepperSize))
+//   .icon
+//     transform: translate(8px, 0px)
+// 
+//   &.enabled
+//     transform: translate($_stepForwardX, -($_halfStepperSize))
+// 
+//     &:hover
+//       .icon
+//         transform: translate(50%, 0%)
+// 
+// 
+// $_stepBackX = -($_halfStepperSize) - $_halfCardWidth
+// #step-back
+//   transform: translate($_stepBackX + $_quarterStepperSize, -($_halfStepperSize))
+//   .icon
+//     transform: translate(-5px, 0px)
+// 
+//   &.enabled
+//     transform: translate($_stepBackX, -($_halfStepperSize))
+// 
+//     &:hover
+//       .icon
+//         transform: translate(-50%, 0%)
 
-    &:hover
-      .icon
-        transform: translate(-50%, 0%)
-
-$_cardEaseDur = 0.8s
+$_cardEaseDur = 0.3s
 .card
   position: absolute
-  width: $_cardWidth
-  padding: 50px 0
+  margin-top: 60px
+  width: 100%
   height: 100%
   box-sizing: border-box
-  left: 50%
-  transform: translate(-50%, 0%) rotateY(0deg)
   transform-style: flat
   visibility: visible
-  z-index: 100
+  background-color: #fff
+  overflow-x: hidden
+  overflow-y: auto
   -webkit-filter: brightness(100%)
   transition: transform $_cardEaseDur ease-in-out,
               visibility $_cardEaseDur ease-in-out
@@ -106,30 +155,39 @@ $_cardEaseDur = 0.8s
     visibility: hidden
 
   &.pending
-    transform: translate(150vw, 0%) rotateY(-90deg)
+    transform: translate(100%, 0%) rotateY(-90deg)
 
   &.discarded
-    transform: translate(-150vw, 0%) rotateY(90deg)
+    transform: translate(-100%, 0%) rotateY(90deg)
 
 .card-contents
+  display: flex
+  flex-direction: column
   height: 100%
-  box-shadow: 0px 0px 10px 0px rgba(0, 0, 0, 0.3)
-  background-color: #fff
-  border: 1px solid #99a
-  border-radius: 5px
-  overflow: hidden
+
+.card-instructions
+  flex: 0 0
+  text-align: center
+  padding: 20px 0px
+  border-bottom: 2px solid #ccd
+
+.card-body
+  flex: 1 0
 
 .editor-input
   width: 100%
   height: 100%
   padding: 20px
-  font-size: 40px
-  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif
   overflow: hidden
   resize: none
   outline: none
   box-sizing: border-box
   border: none
+
+.big-text
+  font-size: 40px
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif
+  line-height: 54px
 
 @keyframes spin {
   from {
@@ -177,20 +235,45 @@ $_cardEaseDur = 0.8s
     animation-iteration-count: infinite
     animation-timing-function: linear
 
+$__fragColour = #99c
+$__fragHue = hue($__fragColour)
 #configure-card
   .fragments
-    font-size: 40px
+    padding: 20px
 
   .frag
     display: inline-block
-    margin: 0 0.25em 0 0
+    position: relative
+
+  .frag-noun, .frag-verb, .frag-adj
+    padding: 0 0.25em
 
   .frag-noun
-    color: #f92
+    color: $__fragColour
 
   .frag-verb
-    color: #29f
-    border-bottom: 2px dashed #29f
+    color: hue($__fragColour, $__fragHue - 50deg)
 
   .frag-adj
-    color: #9f2
+    color: hue($__fragColour, $__fragHue + 50deg)
+
+  .frag-controls
+    position: absolute
+    min-width: 200px
+    height: 150px
+    top: 50%
+    left: 50%
+    transform: translate(-50%, -50%)
+    z-index: 1
+    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.3)
+    background-color: #fff
+    font-size: 14px
+    line-height: 14px
+
+  .frag-lev-num
+    position: absolute
+    top: 2px
+    left: 2px
+
+  .frag-word
+    position: relative
