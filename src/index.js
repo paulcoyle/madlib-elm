@@ -21,3 +21,44 @@ app.ports.parse.subscribe((tup) => {
       app.ports.parsed.send([id, false, []]);
     })
 });
+
+app.ports.positionControls.subscribe((id) => {
+  let frag = document.getElementById(id)
+  let controls = document.getElementById('frag-controls')
+
+  if (!frag || !controls) {
+    return
+  }
+
+  let fragDims = measure(frag)
+  let controlDims = measure(controls)
+  let parentDims = measure(controls.parentNode)
+
+  let x = centerHorizontal(fragDims, controlDims)
+  let y = fragDims.y + fragDims.h
+
+  if (x < 0) {
+    x = 0
+  } else if ((x + controlDims.w) > parentDims.w) {
+    x = parentDims.w - controlDims.w
+  }
+
+  if (y > (parentDims.h - controlDims.h)) {
+    y = fragDims.y - controlDims.h
+  }
+
+  controls.style.transform = `translate(${x}px, ${y}px)`
+})
+
+function measure(element) {
+  return {
+    x: element.offsetLeft,
+    y: element.offsetTop,
+    w: element.offsetWidth,
+    h: element.offsetHeight
+  }
+}
+
+function centerHorizontal(target, positioned) {
+  return target.x - ((positioned.w - target.w) / 2)
+}

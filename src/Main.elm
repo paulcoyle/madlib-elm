@@ -50,7 +50,7 @@ init =
         ( editor, editorCmd ) =
             Editor.init
 
-        ( configureCard, configureCmd ) =
+        ( configureCard, configureCmd, _ ) =
             ConfigCard.init Nothing
 
         commands =
@@ -74,6 +74,9 @@ init =
 port parse : ( Int, String ) -> Cmd msg
 
 
+port positionControls : String -> Cmd msg
+
+
 update : Msg -> Model -> ( Model, Cmd Msg )
 update message model =
     case message of
@@ -94,13 +97,13 @@ update message model =
                 ( editor, editorCmd, editorEvent ) =
                     Editor.update editorMsg model.editor
 
-                ( newModel, commandsFromEvent ) =
+                ( newModel, commands ) =
                     updateByEditorEvent editorEvent { model | editor = editor }
             in
                 ( newModel
                 , Cmd.batch
                     [ Cmd.map Editor editorCmd
-                    , commandsFromEvent
+                    , commands
                     ]
                 )
 
@@ -115,15 +118,11 @@ update message model =
                 lastParse =
                     Just parseData
 
-                ( configureCard, configureCmd ) =
+                ( configureCard, configureCmd, _ ) =
                     ConfigCard.init lastParse
-
-                -- Add stage change here to auto step forward
-                stage =
-                    StageConfigure
             in
                 ( { model
-                    | stage = stage
+                    | stage = StageConfigure
                     , lastGoodParseId = lastGood
                     , lastParse = lastParse
                     , configureCard = configureCard
@@ -139,11 +138,22 @@ update message model =
 
         ConfigCard configureMsg ->
             let
-                ( configureCard, configureCmd ) =
+                ( configureCard, configureCmd, configureExtern ) =
                     ConfigCard.update configureMsg model.configureCard
+
+                ( model', cmds' ) =
+                    case configureExtern of
+                        Nothing ->
+                            ( model, Cmd.none )
+
+                        Just (ConfigCard.PositionFrag id) ->
+                            ( model, positionControls id )
             in
-                ( { model | configureCard = configureCard }
-                , Cmd.map ConfigCard configureCmd
+                ( { model' | configureCard = configureCard }
+                , Cmd.batch
+                    [ Cmd.map ConfigCard configureCmd
+                    , cmds'
+                    ]
                 )
 
 

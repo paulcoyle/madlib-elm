@@ -104,33 +104,6 @@ $_quarterStepperSize = $_halfStepperSize / 2
   .icon
     transform: translate(-2px, 0px)
 
-// $_stepForwardX = -($_halfStepperSize) + $_halfCardWidth
-// #step-forward
-//   transform: translate($_stepForwardX - $_quarterStepperSize, -($_halfStepperSize))
-//   .icon
-//     transform: translate(8px, 0px)
-// 
-//   &.enabled
-//     transform: translate($_stepForwardX, -($_halfStepperSize))
-// 
-//     &:hover
-//       .icon
-//         transform: translate(50%, 0%)
-// 
-// 
-// $_stepBackX = -($_halfStepperSize) - $_halfCardWidth
-// #step-back
-//   transform: translate($_stepBackX + $_quarterStepperSize, -($_halfStepperSize))
-//   .icon
-//     transform: translate(-5px, 0px)
-// 
-//   &.enabled
-//     transform: translate($_stepBackX, -($_halfStepperSize))
-// 
-//     &:hover
-//       .icon
-//         transform: translate(-50%, 0%)
-
 $_cardEaseDur = 0.3s
 .card
   position: absolute
@@ -238,15 +211,19 @@ $_cardEaseDur = 0.3s
 $__fragColour = #99c
 $__fragHue = hue($__fragColour)
 #configure-card
-  .fragments
+  .card-body
     padding: 20px
 
   .frag
     display: inline-block
     position: relative
+    border-radius: 10px 10px 0px 0px
+    background-color: transparent
+    transition: background-color 0.2s linear 0.01s
 
   .frag-noun, .frag-verb, .frag-adj
     padding: 0 0.25em
+    cursor: pointer
 
   .frag-noun
     color: $__fragColour
@@ -257,23 +234,79 @@ $__fragHue = hue($__fragColour)
   .frag-adj
     color: hue($__fragColour, $__fragHue + 50deg)
 
-  .frag-controls
+  .frag-controlled
+    background-color: tint(#ccd, 70%)
+
+  .frag-configured:before
+    content: ''
     position: absolute
+    left: 10px
+    right: 10px
+    bottom: 0
+    height: 1px
+    border-bottom: 2px dotted
+
+
+  #frag-controls
+    position: absolute
+    top: 0px
+    left: -9999px
     min-width: 200px
-    height: 150px
-    top: 50%
-    left: 50%
-    transform: translate(-50%, -50%)
+    height: 100px
     z-index: 1
-    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.3)
-    background-color: #fff
-    font-size: 14px
-    line-height: 14px
+    background-color: tint(#ccd, 70%)
+    border-radius: 10px
+    box-shadow: 0px 4px 0px rgba(0, 0, 0, 0.2)
+    opacity: 0
+    transition: opacity 0.2s linear 0.01s,
+                left 0s linear 0.201s
+
+    &.active
+      left: 0px
+      opacity: 1
+      transition: opacity 0.2s linear 0.01s,
+                  left 0s linear 0s,
+                  transform 0.2s ease-in-out 0s
+
+    .frag-config-label
+      font-size: 0.8em
+      text-align: center
+      margin-top: 5px
+      color: shade(#ccd, 25%)
+
+    .frag-config-stepper
+      display: flex
+      margin: 5px
+      height: 36px
+
+      .decrement, .increment
+        flex: 0 0 26px
+        padding: 5px
+        border-radius: 8px
+        background-color: #f0f
+        cursor: pointer
+
+      .value
+        font-size: 1.5em
+        text-align: center
+        flex: 1 1
+
+    .frag-config-cancel, .frag-config-set
+      position: absolute
+      padding: 8px
+      border-radius: 8px
+      cursor: pointer
+
+    .frag-config-cancel
+      left: 5px
+      bottom: 5px
+
+    .frag-config-set
+      right: 5px
+      bottom: 5px
+      background-color: #f93
 
   .frag-lev-num
     position: absolute
     top: 2px
     left: 2px
-
-  .frag-word
-    position: relative
