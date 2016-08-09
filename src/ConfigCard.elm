@@ -6,8 +6,17 @@ import Html.App as App
 import Html.Attributes as Attr
 import Html.Events as Events
 import Parse exposing (Parse)
-import String
 import Icon
+import Fragments
+    exposing
+        ( Fragment(..)
+        , FragKind(..)
+        , startConfiguring
+        , configure
+        , stopConfiguring
+        , unconfigure
+        , valueLength
+        )
 
 
 type Msg
@@ -20,19 +29,6 @@ type Msg
 
 type ExternMsg
     = PositionFrag String
-
-
-type FragKind
-    = Noun
-    | Verb
-    | Adj
-
-
-type Fragment
-    = Plain String
-    | Configurable FragKind String
-    | Configuring FragKind String Int
-    | Configured FragKind String Int
 
 
 type alias FragmentList =
@@ -121,7 +117,7 @@ update msg model =
                 num' =
                     case fragment of
                         Just ( _, f ) ->
-                            max num (fragmentLength f)
+                            max num (valueLength f)
 
                         Nothing ->
                             0
@@ -175,20 +171,8 @@ view model =
 
 numConfigured : Model -> Int
 numConfigured model =
-    let
-        mapper ( _, frag ) =
-            case frag of
-                Configuring _ _ _ ->
-                    1
-
-                Configured _ _ _ ->
-                    1
-
-                _ ->
-                    0
-    in
-        List.sum <|
-            List.map mapper model.fragments
+    Fragments.numConfigured <|
+        List.map (\( _, frag ) -> frag) model.fragments
 
 
 fragmentView : ( Int, Fragment ) -> Html Msg
@@ -295,26 +279,6 @@ fragControlsView model =
                     []
 
 
-fragmentLength : Fragment -> Int
-fragmentLength frag =
-    let
-        value =
-            case frag of
-                Plain val ->
-                    val
-
-                Configurable _ val ->
-                    val
-
-                Configuring _ val _ ->
-                    val
-
-                Configured _ val _ ->
-                    val
-    in
-        String.length value
-
-
 startConfiguringIndexed : Int -> FragmentList -> FragmentList
 startConfiguringIndexed index list =
     let
@@ -323,22 +287,6 @@ startConfiguringIndexed index list =
             startConfiguring frag
     in
         modifyIndexed index setMap list
-
-
-startConfiguring : Fragment -> Fragment
-startConfiguring frag =
-    case frag of
-        Plain _ ->
-            frag
-
-        Configurable kind value ->
-            Configuring kind value (String.length value)
-
-        Configuring kind value num ->
-            Configuring kind value num
-
-        Configured kind value num ->
-            Configuring kind value num
 
 
 configureIndexed : Int -> Int -> FragmentList -> FragmentList
@@ -351,22 +299,6 @@ configureIndexed configValue index list =
         modifyIndexed index setMap list
 
 
-configure : Int -> Fragment -> Fragment
-configure configValue frag =
-    case frag of
-        Plain _ ->
-            frag
-
-        Configurable kind value ->
-            Configured kind value configValue
-
-        Configuring kind value _ ->
-            Configuring kind value configValue
-
-        Configured kind value _ ->
-            Configured kind value configValue
-
-
 stopConfiguringIndexed : Int -> FragmentList -> FragmentList
 stopConfiguringIndexed index list =
     let
@@ -377,22 +309,6 @@ stopConfiguringIndexed index list =
         modifyIndexed index setMap list
 
 
-stopConfiguring : Fragment -> Fragment
-stopConfiguring frag =
-    case frag of
-        Plain _ ->
-            frag
-
-        Configurable _ _ ->
-            frag
-
-        Configuring kind value num ->
-            Configured kind value num
-
-        Configured _ _ _ ->
-            frag
-
-
 unconfigureIndexed : Int -> FragmentList -> FragmentList
 unconfigureIndexed index list =
     let
@@ -401,22 +317,6 @@ unconfigureIndexed index list =
             unconfigure frag
     in
         modifyIndexed index setMap list
-
-
-unconfigure : Fragment -> Fragment
-unconfigure frag =
-    case frag of
-        Plain _ ->
-            frag
-
-        Configurable _ _ ->
-            frag
-
-        Configuring kind value _ ->
-            Configurable kind value
-
-        Configured kind value _ ->
-            Configurable kind value
 
 
 getFragByIndex : Int -> FragmentList -> Maybe ( Int, Fragment )
