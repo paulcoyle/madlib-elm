@@ -283,14 +283,24 @@ $__fragHue = hue($__fragColour)
       height: 36px
 
       .decrement, .increment
-        flex: 0 0 26px
-        padding: 5px
+        position: relative
+        flex: 0 0 36px
         border-radius: 8px
-        background-color: #f0f
+        background-color: #ccd
         cursor: pointer
+
+        .icon
+          position: absolute
+          top: 6px
+          left: 6px
+          width: 24px
+          height: 24px
+          fill: shade(#ccd, 50%)
 
       .value
         font-size: 1.5em
+        font-weight: bold
+        line-height: 36px
         text-align: center
         flex: 1 1
 

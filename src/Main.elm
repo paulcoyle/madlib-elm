@@ -217,8 +217,7 @@ canStageForward model =
             model.lastParseId == model.lastGoodParseId
 
         StageConfigure ->
-            -- placeholder
-            False
+            (ConfigCard.numConfigured model.configureCard) > 0
 
         StageGenerate ->
             False

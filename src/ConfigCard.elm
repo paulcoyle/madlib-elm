@@ -2,10 +2,12 @@ module ConfigCard exposing (..)
 
 import List
 import Html exposing (Html)
+import Html.App as App
 import Html.Attributes as Attr
 import Html.Events as Events
 import Parse exposing (Parse)
 import String
+import Icon
 
 
 type Msg
@@ -13,6 +15,7 @@ type Msg
     | SetConfiguration Int Int
     | StopConfiguring Int
     | Unconfigure Int
+    | NoOp Icon.Msg
 
 
 type ExternMsg
@@ -39,7 +42,7 @@ type alias FragmentList =
 type alias Model =
     { parseData : Maybe (List Parse)
     , fragments : FragmentList
-    , activeConfig : Maybe ( Int, Fragment )
+    , activeConfig : Maybe Int
     }
 
 
@@ -93,22 +96,42 @@ update msg model =
 
                 fragment =
                     getFragByIndex index configured
+
+                activeConfig =
+                    case fragment of
+                        Just ( i, _ ) ->
+                            Just i
+
+                        Nothing ->
+                            Nothing
             in
                 ( { model
                     | fragments = configured
-                    , activeConfig = fragment
+                    , activeConfig = activeConfig
                   }
                 , Cmd.none
                 , Just (PositionFrag ("frag-" ++ (toString index)))
                 )
 
         SetConfiguration index num ->
-            ( { model
-                | fragments = configureIndexed index num model.fragments
-              }
-            , Cmd.none
-            , Nothing
-            )
+            let
+                fragment =
+                    getFragByIndex index model.fragments
+
+                num' =
+                    case fragment of
+                        Just ( _, f ) ->
+                            max num (fragmentLength f)
+
+                        Nothing ->
+                            0
+            in
+                ( { model
+                    | fragments = configureIndexed num' index model.fragments
+                  }
+                , Cmd.none
+                , Nothing
+                )
 
         StopConfiguring index ->
             ( { model
@@ -128,6 +151,9 @@ update msg model =
             , Nothing
             )
 
+        NoOp _ ->
+            ( model, Cmd.none, Nothing )
+
 
 view : Model -> Html Msg
 view model =
@@ -145,6 +171,24 @@ view model =
             , fragControlsView model
             ]
         ]
+
+
+numConfigured : Model -> Int
+numConfigured model =
+    let
+        mapper ( _, frag ) =
+            case frag of
+                Configuring _ _ _ ->
+                    1
+
+                Configured _ _ _ ->
+                    1
+
+                _ ->
+                    0
+    in
+        List.sum <|
+            List.map mapper model.fragments
 
 
 fragmentView : ( Int, Fragment ) -> Html Msg
@@ -199,43 +243,76 @@ fragmentView ( index, fragment ) =
 
 fragControlsView : Model -> Html Msg
 fragControlsView model =
-    case model.activeConfig of
-        Just ( index, Configuring kind value num ) ->
-            Html.div
-                [ Attr.id "frag-controls"
-                , Attr.class "active"
-                ]
-                [ Html.p
-                    [ Attr.class "frag-config-label" ]
-                    [ Html.text "Levenshtein Distance" ]
-                , Html.div
-                    [ Attr.class "frag-config-stepper" ]
-                    [ Html.div
-                        [ Attr.class "decrement" ]
-                        [ Html.text "-" ]
-                    , Html.div
-                        [ Attr.class "value" ]
-                        [ Html.text (toString num) ]
-                    , Html.div
-                        [ Attr.class "increment" ]
-                        [ Html.text "+" ]
-                    ]
-                , Html.div
-                    [ Attr.class "frag-config-cancel"
-                    , Events.onClick (Unconfigure index)
-                    ]
-                    [ Html.text "Don't Use" ]
-                , Html.div
-                    [ Attr.class "frag-config-set"
-                    , Events.onClick (StopConfiguring index)
-                    ]
-                    [ Html.text "Done" ]
-                ]
+    let
+        frag =
+            case model.activeConfig of
+                Just i ->
+                    getFragByIndex i model.fragments
 
-        _ ->
-            Html.div
-                [ Attr.id "frag-controls" ]
-                []
+                Nothing ->
+                    Nothing
+    in
+        case frag of
+            Just ( index, Configuring kind value num ) ->
+                Html.div
+                    [ Attr.id "frag-controls"
+                    , Attr.class "active"
+                    ]
+                    [ Html.p
+                        [ Attr.class "frag-config-label" ]
+                        [ Html.text "Levenshtein Distance" ]
+                    , Html.div
+                        [ Attr.class "frag-config-stepper" ]
+                        [ Html.div
+                            [ Attr.class "decrement"
+                            , Events.onClick (SetConfiguration index (num - 1))
+                            ]
+                            [ App.map NoOp (Icon.view "minus") ]
+                        , Html.div
+                            [ Attr.class "value" ]
+                            [ Html.text (toString num) ]
+                        , Html.div
+                            [ Attr.class "increment"
+                            , Events.onClick (SetConfiguration index (num + 1))
+                            ]
+                            [ App.map NoOp (Icon.view "plus") ]
+                        ]
+                    , Html.div
+                        [ Attr.class "frag-config-cancel"
+                        , Events.onClick (Unconfigure index)
+                        ]
+                        [ Html.text "Don't Use" ]
+                    , Html.div
+                        [ Attr.class "frag-config-set"
+                        , Events.onClick (StopConfiguring index)
+                        ]
+                        [ Html.text "Done" ]
+                    ]
+
+            _ ->
+                Html.div
+                    [ Attr.id "frag-controls" ]
+                    []
+
+
+fragmentLength : Fragment -> Int
+fragmentLength frag =
+    let
+        value =
+            case frag of
+                Plain val ->
+                    val
+
+                Configurable _ val ->
+                    val
+
+                Configuring _ val _ ->
+                    val
+
+                Configured _ val _ ->
+                    val
+    in
+        String.length value
 
 
 startConfiguringIndexed : Int -> FragmentList -> FragmentList
