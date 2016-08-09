@@ -15,11 +15,10 @@ export const typeNotApplicable = 'NA'
 // with the JSON result, or rejecting with no content.
 export function fetchNlpData(content) {
   let settings = escape(JSON.stringify(getSettings()))
-  let postData = new URLSearchParams(content) // yeah, they do it weird
 
   return fetch('http://corenlp.run/?properties=' + settings, {
     method: 'POST',
-    body: postData
+    body: content + '='
   })
   .then((response) => {
     return response.json()
