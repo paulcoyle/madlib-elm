@@ -1,9 +1,3 @@
-/**
- * This is just a simple interface to the Stanford CoreNLP hosted
- * web api.  There is no documentation for it so this was simply
- * reverse engineered.  Thankfully, they allow CORS requests from
- * any origin! :)
- */
 import 'whatwg-fetch'
 
 export const typeNoun = 'NOUN'
@@ -16,7 +10,7 @@ export const typeNotApplicable = 'NA'
 export function fetchNlpData(content) {
   let settings = escape(JSON.stringify(getSettings()))
 
-  return fetch('http://corenlp.run/?properties=' + settings, {
+  return fetch('http://corenlp.corpsedisposal.com:9000/?properties=' + settings, {
     method: 'POST',
     body: content + '='
   })

@@ -112,3 +112,32 @@ valueLength frag =
                     val
     in
         String.length value
+
+
+kindString : Fragment -> String
+kindString frag =
+    case frag of
+        Plain _ ->
+            "-"
+
+        Configurable kind _ ->
+            kindToString kind
+
+        Configuring kind _ _ ->
+            kindToString kind
+
+        Configured kind _ _ ->
+            kindToString kind
+
+
+kindToString : FragKind -> String
+kindToString kind =
+    case kind of
+        Noun ->
+            "Noun"
+
+        Verb ->
+            "Verb"
+
+        Adj ->
+            "Adjective"

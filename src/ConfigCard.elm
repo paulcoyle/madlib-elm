@@ -207,14 +207,22 @@ fragmentView ( index, fragment ) =
                     , Attr.class (fragmentClass kind)
                     , Events.onClick (StartConfiguring index)
                     ]
-                    [ Html.text value ]
+                    [ Html.text value
+                    , Html.span
+                        [ Attr.class "frag-kind-label" ]
+                        [ Html.text (Fragments.kindToString kind) ]
+                    ]
 
             Configuring kind value num ->
                 Html.span
                     [ Attr.id id
                     , Attr.class ((fragmentClass kind) ++ " frag-controlled")
                     ]
-                    [ Html.text value ]
+                    [ Html.text value
+                    , Html.span
+                        [ Attr.class "frag-kind-label" ]
+                        [ Html.text (Fragments.kindToString kind) ]
+                    ]
 
             Configured kind value num ->
                 Html.span
@@ -222,7 +230,11 @@ fragmentView ( index, fragment ) =
                     , Attr.class ((fragmentClass kind) ++ " frag-configured")
                     , Events.onClick (StartConfiguring index)
                     ]
-                    [ Html.text value ]
+                    [ Html.text value
+                    , Html.span
+                        [ Attr.class "frag-kind-label" ]
+                        [ Html.text (Fragments.kindToString kind) ]
+                    ]
 
 
 fragControlsView : Model -> Html Msg
