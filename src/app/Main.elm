@@ -260,8 +260,7 @@ stepStageForward model =
             ( { model
                 | stage = StageGenerate
                 , generatorCard =
-                    GeneratorCard.setFragments
-                        model.configureCard.fragments
+                    GeneratorCard.setFragments model.configureCard.fragments
                         model.generatorCard
               }
             , Cmd.none
@@ -310,7 +309,12 @@ stepStageBack model =
             )
 
         StageGenerate ->
-            ( { model | stage = StageConfigure }, Cmd.none )
+            ( { model
+                | stage = StageConfigure
+                , generatorCard = GeneratorCard.clearMadlib model.generatorCard
+              }
+            , Cmd.none
+            )
 
 
 canStageBack : Model -> Bool
@@ -484,14 +488,11 @@ stagesView model =
             List.foldl mapper mapData orderedStages
 
         displayMarkup stage =
-            Html.div
-                [ Attr.class ("stage-map-item " ++ (fst stage)) ]
+            Html.div [ Attr.class ("stage-map-item " ++ (fst stage)) ]
                 [ Html.text (snd stage) ]
     in
-        [ Html.div
-            [ Attr.id "stage-map" ]
-            (List.map
-                displayMarkup
+        [ Html.div [ Attr.id "stage-map" ]
+            (List.map displayMarkup
                 displayData.stages
             )
         ]

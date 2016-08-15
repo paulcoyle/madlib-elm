@@ -71,6 +71,11 @@ setSeed seed model =
     { model | seed = Random.initialSeed seed }
 
 
+clearMadlib : Model -> Model
+clearMadlib model =
+    { model | madlib = Nothing }
+
+
 canGenerateMadlib : Model -> Bool
 canGenerateMadlib model =
     (model.adjWords /= Nothing)
@@ -117,11 +122,9 @@ view model =
         [ Attr.id "generate-card"
         , Attr.class "card-contents"
         ]
-        [ Html.div
-            [ Attr.class "card-instructions" ]
+        [ Html.div [ Attr.class "card-instructions" ]
             [ controlsView model ]
-        , Html.div
-            [ Attr.class "card-body" ]
+        , Html.div [ Attr.class "card-body" ]
             [ madlibView model ]
         ]
 
@@ -140,8 +143,7 @@ controlsView model =
                 Html.div []
                     [ Html.text "Waiting for corpus data..." ]
     in
-        Html.div
-            [ Attr.id "generate-controls" ]
+        Html.div [ Attr.id "generate-controls" ]
             [ content ]
 
 
@@ -155,7 +157,6 @@ madlibView model =
             [ Attr.id "generate-madlib"
             , Attr.class "big-text"
             ]
-            [ Html.div
-                []
+            [ Html.div []
                 [ Html.text madlib ]
             ]

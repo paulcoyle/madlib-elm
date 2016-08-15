@@ -50,16 +50,32 @@ module.exports = {
     ]
   },
 
-  plugins: [
-    new HtmlWebpackPlugin({
-      template: 'src/index.html',
-      filename: 'index.html',
-      inject: 'body'
-    })
-  ],
+  plugins: getPlugins(),
 
   stylus: {
     use: [require('nib')()],
     import: ['~nib/index.styl']
   }
+}
+
+function getPlugins() {
+  let plugins = [
+    new HtmlWebpackPlugin({
+      template: 'src/index.html',
+      filename: 'index.html',
+      inject: 'body'
+    })
+  ]
+
+  if (process.env.NODE_ENV === 'production') {
+    plugins.push(
+      new webpack.optimize.UglifyJsPlugin({
+        minimize: true,
+        output: { comments: false },
+        warnings: false
+      })
+    )
+  }
+
+  return plugins
 }

@@ -1,6 +1,6 @@
 import { fetchNlpData, simplifyNlpData } from './corenlp.js'
 
-const Elm = require('./Main')
+const Elm = require('./app/Main')
 
 require('./css/main.styl')
 
