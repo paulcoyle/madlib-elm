@@ -3,11 +3,11 @@ const fs = require('fs')
 let done = false
 
 packWordsInFile('wordsrc/adj.txt')
-  .then(saveAsJson.bind(null, 'adj.json'))
+  .then(saveAsJson.bind(null, 'src/corpus/adj.json'))
   .then(() => packWordsInFile('wordsrc/noun.txt'))
-  .then(saveAsJson.bind(null, 'noun.json'))
+  .then(saveAsJson.bind(null, 'src/corpus/noun.json'))
   .then(() => packWordsInFile('wordsrc/verb.txt'))
-  .then(saveAsJson.bind(null, 'verb.json'))
+  .then(saveAsJson.bind(null, 'src/corpus/verb.json'))
   .then(() => {
     done = true
   })
@@ -41,7 +41,8 @@ function packWordsInFile(filePath) {
       parseableLines
         .split('\n')
         .map(extractWord)
-        .filter(isWordMoreThanOneLetter)
+        .filter(isWordLengthMoreThan(1))
+        .filter(isWordLengthLessThan(30))
         .reduce(binWordsByLength, wordBins)
     })
 
@@ -55,6 +56,14 @@ function packWordsInFile(filePath) {
 
 function extractWord(line) {
   return line.slice(0, line.indexOf(' ')).replace(/_/g, ' ')
+}
+
+function isWordLengthMoreThan(length) {
+  return (word) => word.length > length
+}
+
+function isWordLengthLessThan(length) {
+  return (word) => word.length < length
 }
 
 function isWordMoreThanOneLetter(word) {

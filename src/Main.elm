@@ -6,8 +6,10 @@ import Html.Attributes as Attr
 import Html.Events exposing (onClick)
 import Editor
 import Parse exposing (Parse)
+import Fragments
 import WorkingCard
 import ConfigCard
+import GeneratorCard
 import String
 import Icon
 
@@ -16,11 +18,14 @@ type Msg
     = StageForward
     | StageBack
     | ReceiveParse ParseResponse
+    | ReceiveCorpus Corpus
+    | ReceiveSeed Int
     | Editor Editor.Msg
       -- These Icon messages are ignored.
     | Icon Icon.Msg
     | WorkingCard WorkingCard.Msg
     | ConfigCard ConfigCard.Msg
+    | GeneratorCard GeneratorCard.Msg
 
 
 type Stage
@@ -37,11 +42,16 @@ type alias Model =
     , lastGoodParseId : Int
     , lastParse : Maybe (List Parse)
     , configureCard : ConfigCard.Model
+    , generatorCard : GeneratorCard.Model
     }
 
 
 type alias ParseResponse =
     ( Int, Bool, List Parse )
+
+
+type alias Corpus =
+    ( String, List ( Int, List String ) )
 
 
 init : ( Model, Cmd Msg )
@@ -53,11 +63,14 @@ init =
         ( configureCard, configureCmd, _ ) =
             ConfigCard.init Nothing
 
+        ( generatorCard, generatorCmd ) =
+            GeneratorCard.init Nothing
+
         commands =
             Cmd.batch
                 [ Cmd.map Editor editorCmd
                 , Cmd.map ConfigCard configureCmd
-                , Cmd.none
+                , Cmd.map GeneratorCard generatorCmd
                 ]
     in
         ( { stage = StageTextEntry
@@ -66,6 +79,7 @@ init =
           , lastGoodParseId = -1
           , lastParse = Nothing
           , configureCard = configureCard
+          , generatorCard = generatorCard
           }
         , commands
         )
@@ -130,6 +144,29 @@ update message model =
                 , Cmd.map ConfigCard configureCmd
                 )
 
+        ReceiveCorpus ( kind, words ) ->
+            let
+                generatorCard =
+                    case (Fragments.kindFromString kind) of
+                        Just k ->
+                            GeneratorCard.setCorpus k words model.generatorCard
+
+                        Nothing ->
+                            model.generatorCard
+            in
+                ( { model | generatorCard = generatorCard }, Cmd.none )
+
+        ReceiveSeed seed ->
+            let
+                x =
+                    Debug.log "seed" seed
+            in
+                ( { model
+                    | generatorCard = GeneratorCard.setSeed seed model.generatorCard
+                  }
+                , Cmd.none
+                )
+
         Icon _ ->
             ( model, Cmd.none )
 
@@ -156,13 +193,32 @@ update message model =
                     ]
                 )
 
+        GeneratorCard generatorMsg ->
+            let
+                ( generatorCard, generatorCmd ) =
+                    GeneratorCard.update generatorMsg model.generatorCard
+            in
+                ( { model | generatorCard = generatorCard }
+                , Cmd.map GeneratorCard generatorCmd
+                )
+
 
 port parsed : (ParseResponse -> msg) -> Sub msg
 
 
+port corpus : (Corpus -> msg) -> Sub msg
+
+
+port seed : (Int -> msg) -> Sub msg
+
+
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    parsed ReceiveParse
+    Sub.batch
+        [ parsed ReceiveParse
+        , corpus ReceiveCorpus
+        , seed ReceiveSeed
+        ]
 
 
 stageOrder : Stage -> Int
@@ -201,7 +257,15 @@ stepStageForward model =
             ( { model | stage = StageConfigure }, Cmd.none )
 
         StageConfigure ->
-            ( { model | stage = StageGenerate }, Cmd.none )
+            ( { model
+                | stage = StageGenerate
+                , generatorCard =
+                    GeneratorCard.setFragments
+                        model.configureCard.fragments
+                        model.generatorCard
+              }
+            , Cmd.none
+            )
 
         StageGenerate ->
             ( model, Cmd.none )
@@ -293,6 +357,7 @@ cardViews model =
     [ (textEntryCardView model)
     , (waitingForParseCardView model)
     , (configureCardView model)
+    , (generatorCardView model)
     ]
 
 
@@ -322,6 +387,14 @@ configureCardView model =
     Html.div [ cardClassList model.stage StageConfigure ]
         [ App.map ConfigCard
             (ConfigCard.view model.configureCard)
+        ]
+
+
+generatorCardView : Model -> Html Msg
+generatorCardView model =
+    Html.div [ cardClassList model.stage StageGenerate ]
+        [ App.map GeneratorCard
+            (GeneratorCard.view model.generatorCard)
         ]
 
 

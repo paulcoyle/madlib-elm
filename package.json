@@ -1,0 +1,39 @@
+{
+  "name": "madlib-elm",
+  "version": "1.0.0",
+  "description": "",
+  "main": "webpack.config.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/paulcoyle/madlib-elm.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/paulcoyle/madlib-elm/issues"
+  },
+  "homepage": "https://github.com/paulcoyle/madlib-elm#readme",
+  "devDependencies": {
+    "babel-core": "^6.13.2",
+    "babel-loader": "^6.2.4",
+    "babel-preset-es2015": "^6.13.2",
+    "css-loader": "^0.23.1",
+    "elm-webpack-loader": "^3.0.5",
+    "html-webpack-plugin": "^2.22.0",
+    "json-loader": "^0.5.4",
+    "nib": "^1.1.2",
+    "postcss-loader": "^0.10.0",
+    "style-loader": "^0.13.1",
+    "stylus": "^0.54.5",
+    "stylus-loader": "^2.2.0",
+    "svg-sprite-loader": "0.0.26",
+    "webpack": "^1.13.1",
+    "webpack-dev-server": "^1.14.1"
+  },
+  "dependencies": {
+    "whatwg-fetch": "^1.0.0"
+  }
+}

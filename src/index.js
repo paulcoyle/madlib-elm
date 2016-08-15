@@ -2,12 +2,29 @@ import { fetchNlpData, simplifyNlpData } from './corenlp.js'
 
 const Elm = require('./Main')
 
-require( './css/main.styl' )
+require('./css/main.styl')
 
 let svgFiles = require.context('./svg', true, /.+\.svg$/)
 svgFiles.keys().forEach(svgFiles)
 
 let app = Elm.Main.embed(document.getElementById('main'))
+
+require.ensure([], function(require) {
+  let adjectives = require('./corpus/adj.json')
+  app.ports.corpus.send(corpusToElm("Adjective", adjectives))
+})
+require.ensure([], function(require) {
+  let nouns = require('./corpus/noun.json')
+  app.ports.corpus.send(corpusToElm("Noun", nouns))
+})
+require.ensure([], function(require) {
+  let verbs = require('./corpus/verb.json')
+  app.ports.corpus.send(corpusToElm("Verb", verbs))
+})
+
+setTimeout(() => {
+  app.ports.seed.send(Date.now())
+}, 0)
 
 app.ports.parse.subscribe((tup) => {
   let id = tup[0]
@@ -62,4 +79,11 @@ function measure(element) {
 
 function centerHorizontal(target, positioned) {
   return target.x - ((positioned.w - target.w) / 2)
+}
+
+function corpusToElm(name, corpus) {
+  return [
+    name,
+    corpus.map((c) => [c.length, c.words])
+  ]
 }

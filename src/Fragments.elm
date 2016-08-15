@@ -141,3 +141,19 @@ kindToString kind =
 
         Adj ->
             "Adjective"
+
+
+kindFromString : String -> Maybe FragKind
+kindFromString kind =
+    case kind of
+        "Noun" ->
+            Just Noun
+
+        "Verb" ->
+            Just Verb
+
+        "Adjective" ->
+            Just Adj
+
+        _ ->
+            Nothing

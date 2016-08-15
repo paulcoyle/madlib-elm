@@ -8,8 +8,9 @@ module.exports = {
 
   output: {
     path: 'dist',
+    publicPath: '/',
     filename: 'js/app.[chunkhash].js',
-    publicPath: '/'
+    chunkFilename: 'js/[id].[chunkhash].js'
   },
 
   resolve: {
@@ -34,6 +35,10 @@ module.exports = {
         test: /\.styl$/,
         loader: 'style-loader!css-loader!stylus-loader',
         exclude: [/elm-stuff/, /node_modules/]
+      }, {
+        test: /\.json$/,
+        loader: 'json-loader',
+        exclide: [/elm-stuff/, /node_modules/]
       }, {
         test: /\.svg$/,
         loader: 'svg-sprite?' + JSON.stringify({
